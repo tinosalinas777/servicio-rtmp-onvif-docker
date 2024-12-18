@@ -1,0 +1,72 @@
+FROM ubuntu:20.04
+# Establece el directorio de trabajo
+WORKDIR /home/happytime-onvif-server/
+# Instala dependencias necesarias
+#RUN sudo apt update && apt install -y wget libc6 libstdc++6 libssl1.1 libx11-6
+# Establece el entorno no interactivo para evitar preguntas de APT
+ENV DEBIAN_FRONTEND=noninteractive
+# Actualiza la lista de paquetes e instala wget
+RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+# Define la URL de descarga de Happytime (ajusta la URL real)
+ENV  HAPPYTIME_URL="https://www.happytimesoft.com/downloads/happytime-onvif-server.tar.gz"
+
+RUN wget -O /home/happytime-onvif-server.tar.gz https://www.happytimesoft.com/downloads/happytime-onvif-server.tar.gz
+
+RUN tar -xzvf /home/happytime-onvif-server.tar.gz -C /home/
+
+RUN ls -l /home/
+
+RUN chmod +x /home/happytime-onvif-server  # Asegúrate de que este es el nombre correcto del ejecutable
+
+#instal NGINX
+#RUN apt-get update && apt-get install -y nginx-full && rm -rf /var/lib/apt/lists/*
+
+# Instalar paquetes básicos y herramientas para la compilación
+RUN apt-get update && apt-get install -y \
+    build-essential \
+   # wget \
+    git \
+    curl \
+    make \
+    gcc \
+    g++ \
+    zlib1g-dev \
+    automake \
+    libtool \
+    unzip \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+# Instalar las dependencias adicionales necesarias para Happytime RTSP y NGINX
+RUN apt-get update && apt-get install -y \
+    libssl-dev \  
+    libmysqlclient21 \
+    libprotobuf-dev \
+    libcurl4-openssl-dev \
+    libboost-all-dev \
+    liblog4cpp5-dev \
+    libpthread-stubs0-dev \
+    libx264-dev \
+    libx265-dev \
+    libvpx-dev \
+    libavformat-dev \
+    libpcre3-dev \
+    ffmpeg \
+    libnginx-mod-rtmp \
+    nginx \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+
+# Instalamos Nginx desde los fuentes
+RUN git clone https://github.com/arut/nginx-rtmp-module /usr/share/nginx/modules/ngx_http_rtmp_module
+RUN wget https://nginx.org/download/nginx-1.21.6.tar.gz && \
+    tar -xvzf nginx-1.21.6.tar.gz && \
+    cd nginx-1.21.6 && \
+    ./configure --with-http_ssl_module --with-http_v2_module --add-module=/usr/share/nginx/modules/ngx_http_rtmp_module && \
+    make && make install && \
+    rm -rf /nginx-1.21.6
+
+
+
+
+CMD ["sh", "-c", "./runme.sh & /home/happytime-onvif-server/nginx-1.21.6/objs/nginx & tail -f /dev/null"]
+
